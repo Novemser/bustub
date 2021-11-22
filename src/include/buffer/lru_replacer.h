@@ -15,6 +15,7 @@
 #include <list>
 #include <mutex>  // NOLINT
 #include <vector>
+#include <list>
 
 #include "buffer/replacer.h"
 #include "common/config.h"
@@ -47,6 +48,9 @@ class LRUReplacer : public Replacer {
 
  private:
   // TODO(student): implement me!
+  size_t max_pages;
+  size_t current_size;
+  std::vector<frame_id_t> data;
 };
 
 }  // namespace bustub
