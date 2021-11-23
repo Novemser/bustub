@@ -178,6 +178,7 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
 }
 
 bool BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) {
+  std::lock_guard<std::mutex> lock(latch_);
   // 0.   Make sure you call DeallocatePage!
   // 1.   Search the page table for the requested page (P).
   bool can_delete = false;
@@ -214,6 +215,7 @@ bool BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) {
 }
 
 bool BufferPoolManagerInstance::UnpinPgImp(page_id_t page_id, bool is_dirty) {
+  std::lock_guard<std::mutex> lock(latch_);
   auto frame_id_iter = page_table_.find(page_id);
   // unpin non-existence page is not allowed
   if (frame_id_iter == page_table_.end())
