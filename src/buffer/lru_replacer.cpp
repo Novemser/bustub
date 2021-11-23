@@ -49,12 +49,18 @@ void LRUReplacer::Pin(frame_id_t frame_id) {
 }
 
 void LRUReplacer::Unpin(frame_id_t frame_id) {
+    std::lock_guard<std::mutex> lock(lock_);
     auto lst = &this->data;
     auto pos = std::find(lst->begin(), lst->end(), frame_id);
     if (pos == lst->end())
     {
         // not found, add to the first position
-        lst->insert(lst->begin(), frame_id);
+        while (lst->size() >= max_pages)
+        {
+            lst->erase(std::prev(lst->end()));
+        }
+        
+        lst->emplace_front(frame_id);
     }
 }
 
