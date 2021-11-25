@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <assert.h>
+#include <iostream>
 
 #include "buffer/parallel_buffer_pool_manager.h"
 #include "buffer/buffer_pool_manager_instance.h"
@@ -22,7 +23,7 @@ ParallelBufferPoolManager::ParallelBufferPoolManager(size_t num_instances, size_
   // Allocate and create individual BufferPoolManagerInstances
   for (size_t i = 0; i < num_instances; i++)
   {
-    buffer_pools_.emplace_back(new BufferPoolManagerInstance(pool_size, disk_manager, log_manager));
+    buffer_pools_.emplace_back(new BufferPoolManagerInstance(pool_size, num_instances, i, disk_manager, log_manager));
   }
   num_instances_ = num_instances;
 }
@@ -44,6 +45,7 @@ size_t ParallelBufferPoolManager::GetPoolSize() {
 
 size_t ParallelBufferPoolManager::GetBufferPoolIndex(page_id_t page_id)
 {
+  // std::cout << "page_bufferpool_mapping[" << page_id << "]:" << page_bufferpool_mapping[page_id] << std::endl;
   return page_bufferpool_mapping[page_id];
 }
 
@@ -86,6 +88,7 @@ Page *ParallelBufferPoolManager::NewPgImp(page_id_t *page_id) {
     if ( (new_page = buffer_pools_[current_pos]->NewPage(page_id)) != nullptr )
     {
       // new_page != nullptr, continue
+      // std::cout << "Using pool " << current_pos << " for page " << *page_id << std::endl;
       page_bufferpool_mapping[*page_id] = current_pos;
       current_instance_index_ = (current_instance_index_ + 1) % num_instances_;
       return new_page;

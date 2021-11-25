@@ -91,11 +91,13 @@ class ParallelBufferPoolManager : public BufferPoolManager {
  private:
   size_t GetBufferPoolIndex(page_id_t page_id);
   BufferPoolManager* GetBufferPoolAt(size_t index);
+  // page_id_t AllocatePage();
 
   std::vector<BufferPoolManager*> buffer_pools_;
   std::unordered_map<page_id_t, size_t> page_bufferpool_mapping;
   size_t num_instances_;
   size_t current_instance_index_ = 0;
   std::mutex latch_;
+  std::atomic<page_id_t> next_page_id_ = 0;
 };
 }  // namespace bustub
