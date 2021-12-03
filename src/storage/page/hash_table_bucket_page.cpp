@@ -17,65 +17,158 @@
 #include "storage/index/hash_comparator.h"
 #include "storage/table/tmp_tuple.h"
 
+#define OffsetAt(x) (array_ + sizeof(MappingType) * x)
+
 namespace bustub {
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_BUCKET_TYPE::GetValue(KeyType key, KeyComparator cmp, std::vector<ValueType> *result) {
-  return false;
+  bool match = false;
+  for (size_t i = 0; i < BUCKET_ARRAY_SIZE; i++) {
+    auto k_position = reinterpret_cast<KeyType *>(OffsetAt(i));
+    auto v_position = reinterpret_cast<const ValueType *>(OffsetAt(i) + sizeof(KeyType));
+    if (!cmp(key, *k_position)) {
+      result->push_back(*v_position);
+      match = true;
+    }
+  }
+
+  return match;
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_BUCKET_TYPE::Insert(KeyType key, ValueType value, KeyComparator cmp) {
-  return true;
+  if (IsFull()) {
+    return false;
+  }
+
+  for (size_t i = 0; i < BUCKET_ARRAY_SIZE; i++) {
+    auto k_position = reinterpret_cast<KeyType *>(OffsetAt(i));
+    auto v_position = const_cast<ValueType *>(reinterpret_cast<const ValueType *>(OffsetAt(i) + sizeof(KeyType)));
+    if (IsReadable(i)) {
+      // check if the same <kv> pair
+      if (!cmp(key, *k_position) && value == *v_position) {
+        return false;
+      }
+    } else {
+      *k_position = key;
+      *v_position = value;
+      SetOccupied(i);
+      SetReadable(i);
+      return true;
+    }
+  }
+  return false;
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_BUCKET_TYPE::Remove(KeyType key, ValueType value, KeyComparator cmp) {
+  for (size_t i = 0; i < BUCKET_ARRAY_SIZE; i++) {
+    if (!IsOccupied(i) || !IsReadable(i)) {
+      continue;
+    }
+
+    auto k_position = reinterpret_cast<KeyType *>(OffsetAt(i));
+    if (!cmp(key, *k_position)) {
+      RemoveAt(i);
+      return true;
+    }
+  }
   return false;
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 KeyType HASH_TABLE_BUCKET_TYPE::KeyAt(uint32_t bucket_idx) const {
-  return {};
+  assert(bucket_idx < BUCKET_ARRAY_SIZE);
+  auto k_position = reinterpret_cast<const KeyType *>(OffsetAt(bucket_idx));
+  return *k_position;
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 ValueType HASH_TABLE_BUCKET_TYPE::ValueAt(uint32_t bucket_idx) const {
-  return {};
+  assert(bucket_idx < BUCKET_ARRAY_SIZE);
+  auto v_position = reinterpret_cast<const ValueType *>(OffsetAt(bucket_idx) + sizeof(KeyType));
+  return *v_position;
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
-void HASH_TABLE_BUCKET_TYPE::RemoveAt(uint32_t bucket_idx) {}
+void HASH_TABLE_BUCKET_TYPE::RemoveAt(uint32_t bucket_idx) {
+  if (!IsOccupied(bucket_idx) || !IsReadable(bucket_idx)) {
+    return;
+  }
+
+  // set readable to false
+  const size_t byte_position = bucket_idx / 8;
+  const size_t offset = bucket_idx % 8;
+
+  const char val = 1 << offset;
+  readable_[byte_position] = readable_[byte_position] ^ val;
+}
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_BUCKET_TYPE::IsOccupied(uint32_t bucket_idx) const {
-  return false;
+  const size_t byte_position = bucket_idx / 8;
+  const size_t offset = bucket_idx % 8;
+
+  const char val = 1 << offset;
+  return occupied_[byte_position] & val;
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
-void HASH_TABLE_BUCKET_TYPE::SetOccupied(uint32_t bucket_idx) {}
+void HASH_TABLE_BUCKET_TYPE::SetOccupied(uint32_t bucket_idx) {
+  const size_t byte_position = bucket_idx / 8;
+  const size_t offset = bucket_idx % 8;
+
+  const char val = 1 << offset;
+  occupied_[byte_position] = occupied_[byte_position] | val;
+}
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_BUCKET_TYPE::IsReadable(uint32_t bucket_idx) const {
-  return false;
+  const size_t byte_position = bucket_idx / 8;
+  const size_t offset = bucket_idx % 8;
+
+  const char val = 1 << offset;
+  return readable_[byte_position] & val;
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
-void HASH_TABLE_BUCKET_TYPE::SetReadable(uint32_t bucket_idx) {}
+void HASH_TABLE_BUCKET_TYPE::SetReadable(uint32_t bucket_idx) {
+  const size_t byte_position = bucket_idx / 8;
+  const size_t offset = bucket_idx % 8;
+
+  const char val = 1 << offset;
+  readable_[byte_position] = readable_[byte_position] | val;
+}
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_BUCKET_TYPE::IsFull() {
-  return false;
+  for (size_t i = 0; i < BUCKET_ARRAY_SIZE; i++)
+  {
+    if (!IsReadable(i)) {
+      return false;
+    }
+  }
+  
+  return true;
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 uint32_t HASH_TABLE_BUCKET_TYPE::NumReadable() {
-  return 0;
+  uint32_t res = 0;
+  for (size_t i = 0; i < BUCKET_ARRAY_SIZE; i++)
+  {
+    if (IsReadable(i)) {
+      res++;
+    }
+  }
+
+  return res;
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_BUCKET_TYPE::IsEmpty() {
-  return false;
+  return NumReadable() == 0;
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
