@@ -30,7 +30,7 @@ class ReaderWriterLatch {
 
  public:
   ReaderWriterLatch() = default;
-  ~ReaderWriterLatch() { std::lock_guard<mutex_t> guard(mutex_); }
+  ~ReaderWriterLatch() { std::scoped_lock<mutex_t> guard(mutex_); }
 
   DISALLOW_COPY(ReaderWriterLatch);
 
@@ -52,7 +52,7 @@ class ReaderWriterLatch {
    * Release a write latch.
    */
   void WUnlock() {
-    std::lock_guard<mutex_t> guard(mutex_);
+    std::scoped_lock<mutex_t> guard(mutex_);
     writer_entered_ = false;
     reader_.notify_all();
   }
@@ -72,7 +72,7 @@ class ReaderWriterLatch {
    * Release a read latch.
    */
   void RUnlock() {
-    std::lock_guard<mutex_t> guard(mutex_);
+    std::scoped_lock<mutex_t> guard(mutex_);
     reader_count_--;
     if (writer_entered_) {
       if (reader_count_ == 0) {

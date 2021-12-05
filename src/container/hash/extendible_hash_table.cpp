@@ -25,8 +25,25 @@ namespace bustub {
 template <typename KeyType, typename ValueType, typename KeyComparator>
 HASH_TABLE_TYPE::ExtendibleHashTable(const std::string &name, BufferPoolManager *buffer_pool_manager,
                                      const KeyComparator &comparator, HashFunction<KeyType> hash_fn)
-    : buffer_pool_manager_(buffer_pool_manager), comparator_(comparator), hash_fn_(std::move(hash_fn)) {
+    : buffer_pool_manager_(buffer_pool_manager),
+      comparator_(comparator),
+      hash_fn_(std::move(hash_fn)), directory_page_id_(INVALID_PAGE_ID) {
   //  implement me!
+  // create new page for the dir page
+  table_latch_.WLock();
+  auto page = buffer_pool_manager_->NewPage(&directory_page_id_);
+  auto dir_data = reinterpret_cast<HashTableDirectoryPage *>(page->GetData());
+  dir_data->SetPageId(page->GetPageId());
+  assert(INVALID_PAGE_ID != directory_page_id_);
+  table_latch_.WUnlock();
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+HASH_TABLE_TYPE::~ExtendibleHashTable() {
+  // persisted into persistent storage
+  // table_latch_.WLock();
+  // buffer_pool_manager_->DeletePage(FetchDirectoryPage()->GetPageId());
+  // table_latch_.WUnlock();
 }
 
 /*****************************************************************************
@@ -56,7 +73,9 @@ inline uint32_t HASH_TABLE_TYPE::KeyToPageId(KeyType key, HashTableDirectoryPage
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 HashTableDirectoryPage *HASH_TABLE_TYPE::FetchDirectoryPage() {
-  return nullptr;
+  auto page = buffer_pool_manager_->FetchPage(directory_page_id_);
+  assert(page);
+  return reinterpret_cast<HashTableDirectoryPage *>(page->GetData());
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>

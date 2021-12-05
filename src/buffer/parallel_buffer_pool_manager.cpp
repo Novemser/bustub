@@ -13,28 +13,23 @@
 #include <assert.h>
 #include <iostream>
 
-#include "buffer/parallel_buffer_pool_manager.h"
 #include "buffer/buffer_pool_manager_instance.h"
+#include "buffer/parallel_buffer_pool_manager.h"
 
 namespace bustub {
 
 ParallelBufferPoolManager::ParallelBufferPoolManager(size_t num_instances, size_t pool_size, DiskManager *disk_manager,
                                                      LogManager *log_manager) {
   // Allocate and create individual BufferPoolManagerInstances
-  for (size_t i = 0; i < num_instances; i++)
-  {
+  for (size_t i = 0; i < num_instances; i++) {
     buffer_pools_.emplace_back(new BufferPoolManagerInstance(pool_size, num_instances, i, disk_manager, log_manager));
   }
   num_instances_ = num_instances;
 }
 
 // Update constructor to destruct all BufferPoolManagerInstances and deallocate any associated memory
-ParallelBufferPoolManager::~ParallelBufferPoolManager()
-{
-  std::for_each(buffer_pools_.begin(), buffer_pools_.end(), [](BufferPoolManager* mgr) 
-  {
-    delete mgr;
-  });
+ParallelBufferPoolManager::~ParallelBufferPoolManager() {
+  std::for_each(buffer_pools_.begin(), buffer_pools_.end(), [](BufferPoolManager *mgr) { delete mgr; });
   buffer_pools_.clear();
 }
 
@@ -43,14 +38,12 @@ size_t ParallelBufferPoolManager::GetPoolSize() {
   return buffer_pools_[0]->GetPoolSize();
 }
 
-size_t ParallelBufferPoolManager::GetBufferPoolIndex(page_id_t page_id)
-{
+size_t ParallelBufferPoolManager::GetBufferPoolIndex(page_id_t page_id) {
   // std::cout << "page_bufferpool_mapping[" << page_id << "]:" << page_bufferpool_mapping[page_id] << std::endl;
   return page_bufferpool_mapping[page_id];
 }
 
-BufferPoolManager* ParallelBufferPoolManager::GetBufferPoolAt(size_t index)
-{
+BufferPoolManager *ParallelBufferPoolManager::GetBufferPoolAt(size_t index) {
   return buffer_pools_[GetBufferPoolIndex(index)];
 }
 
@@ -82,11 +75,9 @@ Page *ParallelBufferPoolManager::NewPgImp(page_id_t *page_id) {
   std::lock_guard<std::mutex> lock(latch_);
 
   size_t current_pos = current_instance_index_;
-  do
-  {
-    Page* new_page = nullptr;
-    if ( (new_page = buffer_pools_[current_pos]->NewPage(page_id)) != nullptr )
-    {
+  do {
+    Page *new_page = nullptr;
+    if ((new_page = buffer_pools_[current_pos]->NewPage(page_id)) != nullptr) {
       // new_page != nullptr, continue
       // std::cout << "Using pool " << current_pos << " for page " << *page_id << std::endl;
       page_bufferpool_mapping[*page_id] = current_pos;
@@ -111,10 +102,7 @@ bool ParallelBufferPoolManager::DeletePgImp(page_id_t page_id) {
 void ParallelBufferPoolManager::FlushAllPgsImp() {
   std::lock_guard<std::mutex> lock(latch_);
   // flush all pages from all BufferPoolManagerInstances
-  std::for_each(buffer_pools_.begin(), buffer_pools_.end(), [](BufferPoolManager* e) 
-  {
-    e->FlushAllPages();
-  });
+  std::for_each(buffer_pools_.begin(), buffer_pools_.end(), [](BufferPoolManager *e) { e->FlushAllPages(); });
 }
 
 }  // namespace bustub
