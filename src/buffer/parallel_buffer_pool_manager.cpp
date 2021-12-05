@@ -29,13 +29,19 @@ ParallelBufferPoolManager::ParallelBufferPoolManager(size_t num_instances, size_
 
 // Update constructor to destruct all BufferPoolManagerInstances and deallocate any associated memory
 ParallelBufferPoolManager::~ParallelBufferPoolManager() {
+  std::lock_guard<std::mutex> lock(latch_);
   std::for_each(buffer_pools_.begin(), buffer_pools_.end(), [](BufferPoolManager *mgr) { delete mgr; });
   buffer_pools_.clear();
 }
 
 size_t ParallelBufferPoolManager::GetPoolSize() {
   // Get size of all BufferPoolManagerInstances
-  return buffer_pools_[0]->GetPoolSize();
+  size_t size = 0;
+  for (size_t i = 0; i < num_instances_; i++) {
+    size += buffer_pools_[i]->GetPoolSize();
+  }
+
+  return size;
 }
 
 size_t ParallelBufferPoolManager::GetBufferPoolIndex(page_id_t page_id) {
@@ -53,16 +59,19 @@ BufferPoolManager *ParallelBufferPoolManager::GetBufferPoolManager(page_id_t pag
 }
 
 Page *ParallelBufferPoolManager::FetchPgImp(page_id_t page_id) {
+  std::lock_guard<std::mutex> lock(latch_);
   // Fetch page for page_id from responsible BufferPoolManagerInstance
   return GetBufferPoolAt(page_id)->FetchPage(page_id);
 }
 
 bool ParallelBufferPoolManager::UnpinPgImp(page_id_t page_id, bool is_dirty) {
+  std::lock_guard<std::mutex> lock(latch_);
   // Unpin page_id from responsible BufferPoolManagerInstance
   return GetBufferPoolAt(page_id)->UnpinPage(page_id, is_dirty);
 }
 
 bool ParallelBufferPoolManager::FlushPgImp(page_id_t page_id) {
+  std::lock_guard<std::mutex> lock(latch_);
   // Flush page_id from responsible BufferPoolManagerInstance
   return GetBufferPoolAt(page_id)->FlushPage(page_id);
 }
@@ -93,9 +102,8 @@ Page *ParallelBufferPoolManager::NewPgImp(page_id_t *page_id) {
 }
 
 bool ParallelBufferPoolManager::DeletePgImp(page_id_t page_id) {
-  latch_.lock();
+  std::lock_guard<std::mutex> lock(latch_);
   page_bufferpool_mapping_.erase(page_id);
-  latch_.unlock();
   return GetBufferPoolAt(page_id)->DeletePage(page_id);
 }
 

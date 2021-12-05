@@ -187,7 +187,7 @@ bool BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) {
     // 1.   If P does not exist, return true.
     return true;
   }
-  
+
   if (pages_[frame_id].IsDirty()) {
     disk_manager_->WritePage(pages_[frame_id].GetPageId(), pages_[frame_id].GetData());
   }

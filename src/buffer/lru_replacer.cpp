@@ -9,8 +9,8 @@
 // Copyright (c) 2015-2019, Carnegie Mellon University Database Group
 //
 //===----------------------------------------------------------------------===//
-#include <cassert>
 #include <algorithm>
+#include <cassert>
 #include <iostream>
 
 #include "buffer/lru_replacer.h"
