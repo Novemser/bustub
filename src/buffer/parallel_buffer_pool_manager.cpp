@@ -10,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 
 #include "buffer/buffer_pool_manager_instance.h"
@@ -39,8 +39,8 @@ size_t ParallelBufferPoolManager::GetPoolSize() {
 }
 
 size_t ParallelBufferPoolManager::GetBufferPoolIndex(page_id_t page_id) {
-  // std::cout << "page_bufferpool_mapping[" << page_id << "]:" << page_bufferpool_mapping[page_id] << std::endl;
-  return page_bufferpool_mapping[page_id];
+  // std::cout << "page_bufferpool_mapping_[" << page_id << "]:" << page_bufferpool_mapping_[page_id] << std::endl;
+  return page_bufferpool_mapping_[page_id];
 }
 
 BufferPoolManager *ParallelBufferPoolManager::GetBufferPoolAt(size_t index) {
@@ -80,7 +80,7 @@ Page *ParallelBufferPoolManager::NewPgImp(page_id_t *page_id) {
     if ((new_page = buffer_pools_[current_pos]->NewPage(page_id)) != nullptr) {
       // new_page != nullptr, continue
       // std::cout << "Using pool " << current_pos << " for page " << *page_id << std::endl;
-      page_bufferpool_mapping[*page_id] = current_pos;
+      page_bufferpool_mapping_[*page_id] = current_pos;
       current_instance_index_ = (current_instance_index_ + 1) % num_instances_;
       return new_page;
     }
@@ -94,7 +94,7 @@ Page *ParallelBufferPoolManager::NewPgImp(page_id_t *page_id) {
 
 bool ParallelBufferPoolManager::DeletePgImp(page_id_t page_id) {
   latch_.lock();
-  page_bufferpool_mapping.erase(page_id);
+  page_bufferpool_mapping_.erase(page_id);
   latch_.unlock();
   return GetBufferPoolAt(page_id)->DeletePage(page_id);
 }

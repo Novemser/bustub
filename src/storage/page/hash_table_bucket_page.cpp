@@ -17,7 +17,7 @@
 #include "storage/index/hash_comparator.h"
 #include "storage/table/tmp_tuple.h"
 
-#define OffsetAt(x) (array_ + sizeof(MappingType) * x)
+#define OffsetAt(x) (array_ + sizeof(MappingType) * (x))
 
 namespace bustub {
 
@@ -101,7 +101,7 @@ void HASH_TABLE_BUCKET_TYPE::RemoveAt(uint32_t bucket_idx) {
   const size_t byte_position = bucket_idx / 8;
   const size_t offset = bucket_idx % 8;
 
-  const char val = 1 << offset;
+  const unsigned char val = 1 << offset;
   readable_[byte_position] = readable_[byte_position] ^ val;
 }
 
@@ -110,7 +110,7 @@ bool HASH_TABLE_BUCKET_TYPE::IsOccupied(uint32_t bucket_idx) const {
   const size_t byte_position = bucket_idx / 8;
   const size_t offset = bucket_idx % 8;
 
-  const char val = 1 << offset;
+  const unsigned char val = 1 << offset;
   return occupied_[byte_position] & val;
 }
 
@@ -119,7 +119,7 @@ void HASH_TABLE_BUCKET_TYPE::SetOccupied(uint32_t bucket_idx) {
   const size_t byte_position = bucket_idx / 8;
   const size_t offset = bucket_idx % 8;
 
-  const char val = 1 << offset;
+  const unsigned char val = 1 << offset;
   occupied_[byte_position] = occupied_[byte_position] | val;
 }
 
@@ -128,7 +128,7 @@ bool HASH_TABLE_BUCKET_TYPE::IsReadable(uint32_t bucket_idx) const {
   const size_t byte_position = bucket_idx / 8;
   const size_t offset = bucket_idx % 8;
 
-  const char val = 1 << offset;
+  const unsigned char val = 1 << offset;
   return readable_[byte_position] & val;
 }
 
@@ -137,7 +137,7 @@ void HASH_TABLE_BUCKET_TYPE::SetReadable(uint32_t bucket_idx) {
   const size_t byte_position = bucket_idx / 8;
   const size_t offset = bucket_idx % 8;
 
-  const char val = 1 << offset;
+  const unsigned char val = 1 << offset;
   readable_[byte_position] = readable_[byte_position] | val;
 }
 

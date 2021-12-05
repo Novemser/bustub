@@ -44,8 +44,6 @@ class ExtendibleHashTable {
   explicit ExtendibleHashTable(const std::string &name, BufferPoolManager *buffer_pool_manager,
                                const KeyComparator &comparator, HashFunction<KeyType> hash_fn);
 
-  ~ExtendibleHashTable();
-
   /**
    * Inserts a key-value pair into the hash table.
    *

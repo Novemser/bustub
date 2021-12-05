@@ -173,12 +173,13 @@ bool BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) {
   for (auto it = page_table_.begin(); it != page_table_.end(); it = std::next(it)) {
     if (it->first == page_id) {
       if (pages_[it->second].GetPinCount() != 0) {
+        // 2.   If P exists, but has a non-zero pin-count, return false. Someone is using the page.
         return false;
-      } else {
-        can_delete = true;
-        frame_id = it->second;
-        break;
       }
+
+      can_delete = true;
+      frame_id = it->second;
+      break;
     }
   }
 
@@ -186,12 +187,18 @@ bool BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) {
     // 1.   If P does not exist, return true.
     return true;
   }
+  
+  if (pages_[frame_id].IsDirty()) {
+    disk_manager_->WritePage(pages_[frame_id].GetPageId(), pages_[frame_id].GetData());
+  }
 
-  // 2.   If P exists, but has a non-zero pin-count, return false. Someone is using the page.
   // 3.   Otherwise, P can be deleted. Remove P from the page table, reset its metadata and return it to the free list.
   page_table_.erase(page_id);
-  pages_[frame_id].ResetMemory();
   DeallocatePage(pages_[frame_id].GetPageId());
+  pages_[frame_id].ResetMemory();
+  pages_[frame_id].is_dirty_ = false;
+  replacer_->Unpin(frame_id);
+  free_list_.emplace_back(frame_id);
   return true;
 }
 

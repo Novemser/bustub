@@ -96,7 +96,7 @@ class ParallelBufferPoolManager : public BufferPoolManager {
   // page_id_t AllocatePage();
 
   std::vector<BufferPoolManager *> buffer_pools_;
-  std::unordered_map<page_id_t, size_t> page_bufferpool_mapping;
+  std::unordered_map<page_id_t, size_t> page_bufferpool_mapping_;
   size_t num_instances_;
   size_t current_instance_index_ = 0;
   std::mutex latch_;

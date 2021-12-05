@@ -9,7 +9,7 @@
 // Copyright (c) 2015-2019, Carnegie Mellon University Database Group
 //
 //===----------------------------------------------------------------------===//
-#include <assert.h>
+#include <cassert>
 #include <algorithm>
 #include <iostream>
 
@@ -19,13 +19,13 @@ namespace bustub {
 
 LRUReplacer::LRUReplacer(size_t num_pages) {
   assert(num_pages > 0);
-  this->max_pages = num_pages;
+  this->max_pages_ = num_pages;
 }
 
 LRUReplacer::~LRUReplacer() = default;
 
 bool LRUReplacer::Victim(frame_id_t *frame_id) {
-  auto lst = &this->data;
+  auto lst = &this->data_;
   if (lst->empty()) {
     frame_id = nullptr;
     return false;
@@ -38,7 +38,7 @@ bool LRUReplacer::Victim(frame_id_t *frame_id) {
 }
 
 void LRUReplacer::Pin(frame_id_t frame_id) {
-  auto lst = &this->data;
+  auto lst = &this->data_;
   auto pos = std::find(lst->begin(), lst->end(), frame_id);
   if (pos != lst->end()) {
     // found, remove from replacer
@@ -48,11 +48,11 @@ void LRUReplacer::Pin(frame_id_t frame_id) {
 
 void LRUReplacer::Unpin(frame_id_t frame_id) {
   std::lock_guard<std::mutex> lock(lock_);
-  auto lst = &this->data;
+  auto lst = &this->data_;
   auto pos = std::find(lst->begin(), lst->end(), frame_id);
   if (pos == lst->end()) {
     // not found, add to the first position
-    while (lst->size() >= max_pages) {
+    while (lst->size() >= max_pages_) {
       lst->erase(std::prev(lst->end()));
     }
 
@@ -60,6 +60,6 @@ void LRUReplacer::Unpin(frame_id_t frame_id) {
   }
 }
 
-size_t LRUReplacer::Size() { return this->data.size(); }
+size_t LRUReplacer::Size() { return this->data_.size(); }
 
 }  // namespace bustub
