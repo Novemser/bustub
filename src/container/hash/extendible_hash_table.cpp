@@ -32,10 +32,18 @@ HASH_TABLE_TYPE::ExtendibleHashTable(const std::string &name, BufferPoolManager 
   //  implement me!
   // create new page for the dir page
   table_latch_.WLock();
-  auto page = buffer_pool_manager_->NewPage(&directory_page_id_);
-  auto dir_data = reinterpret_cast<HashTableDirectoryPage *>(page->GetData());
-  dir_data->SetPageId(page->GetPageId());
+  // init with one bucket
+  auto dir_page = buffer_pool_manager_->NewPage(&directory_page_id_);
+  page_id_t bucket_page_id = INVALID_PAGE_ID;
+  auto bucket_page = buffer_pool_manager_->NewPage(&bucket_page_id);
   assert(INVALID_PAGE_ID != directory_page_id_);
+  assert(INVALID_PAGE_ID != bucket_page_id);
+
+  auto dir_data = reinterpret_cast<HashTableDirectoryPage *>(dir_page->GetData());
+  directory_page_ = dir_data;
+  dir_data->Init();
+  dir_data->SetPageId(dir_page->GetPageId());
+  dir_data->SetBucketPageId(0, bucket_page->GetPageId());
   table_latch_.WUnlock();
 }
 
@@ -56,12 +64,18 @@ uint32_t HASH_TABLE_TYPE::Hash(KeyType key) {
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 inline uint32_t HASH_TABLE_TYPE::KeyToDirectoryIndex(KeyType key, HashTableDirectoryPage *dir_page) {
-  return 0;
+  uint32_t mask = dir_page->GetGlobalDepthMask();
+  return Hash(key) & mask;
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 inline uint32_t HASH_TABLE_TYPE::KeyToPageId(KeyType key, HashTableDirectoryPage *dir_page) {
-  return 0;
+  auto idx = KeyToDirectoryIndex(key, dir_page);
+  if (directory_page_->GetBucketPageId(idx) == INVALID_PAGE_ID) {
+    assert(false);
+  }
+  
+  return directory_page_->GetBucketPageId(idx);
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
@@ -73,7 +87,12 @@ HashTableDirectoryPage *HASH_TABLE_TYPE::FetchDirectoryPage() {
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 HASH_TABLE_BUCKET_TYPE *HASH_TABLE_TYPE::FetchBucketPage(page_id_t bucket_page_id) {
-  return nullptr;
+  auto page = buffer_pool_manager_->FetchPage(bucket_page_id);
+  if (nullptr == page) {
+    return nullptr;
+  }
+
+  return reinterpret_cast<HASH_TABLE_BUCKET_TYPE *>(page->GetData());
 }
 
 /*****************************************************************************
@@ -81,7 +100,11 @@ HASH_TABLE_BUCKET_TYPE *HASH_TABLE_TYPE::FetchBucketPage(page_id_t bucket_page_i
  *****************************************************************************/
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_TYPE::GetValue(Transaction *transaction, const KeyType &key, std::vector<ValueType> *result) {
-  return false;
+  table_latch_.RLock();
+  HASH_TABLE_BUCKET_TYPE* bucket_page = FetchBucketPage(KeyToPageId(key, directory_page_));
+  auto ret = bucket_page->GetValue(key, comparator_, result);
+  table_latch_.RUnlock();
+  return ret;
 }
 
 /*****************************************************************************
@@ -89,7 +112,18 @@ bool HASH_TABLE_TYPE::GetValue(Transaction *transaction, const KeyType &key, std
  *****************************************************************************/
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_TYPE::Insert(Transaction *transaction, const KeyType &key, const ValueType &value) {
-  return false;
+  table_latch_.RLock();
+  HASH_TABLE_BUCKET_TYPE* bucket_page = FetchBucketPage(KeyToPageId(key, directory_page_));
+  table_latch_.RUnlock();
+
+  table_latch_.WLock();
+  if (bucket_page->IsFull()) {
+    return SplitInsert(transaction, key, value);
+  }
+  
+  auto res = bucket_page->Insert(key, value, comparator_);
+  table_latch_.WUnlock();
+  return res;
 }
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
@@ -102,7 +136,15 @@ bool HASH_TABLE_TYPE::SplitInsert(Transaction *transaction, const KeyType &key, 
  *****************************************************************************/
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_TYPE::Remove(Transaction *transaction, const KeyType &key, const ValueType &value) {
-  return false;
+  table_latch_.RLock();
+  HASH_TABLE_BUCKET_TYPE* bucket_page = FetchBucketPage(KeyToPageId(key, directory_page_));
+  table_latch_.RUnlock();
+
+  table_latch_.WLock();
+  auto res = bucket_page->Remove(key, value, comparator_);
+  table_latch_.WUnlock();
+
+  return res;
 }
 
 /*****************************************************************************

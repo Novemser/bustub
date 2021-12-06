@@ -33,6 +33,10 @@ namespace bustub {
  */
 class HashTableDirectoryPage {
  public:
+  explicit HashTableDirectoryPage();
+
+  void Init();
+
   /**
    * @return the page ID of this page
    */

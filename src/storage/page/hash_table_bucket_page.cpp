@@ -25,6 +25,10 @@ template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_BUCKET_TYPE::GetValue(KeyType key, KeyComparator cmp, std::vector<ValueType> *result) {
   bool match = false;
   for (size_t i = 0; i < BUCKET_ARRAY_SIZE; i++) {
+    if (!IsReadable(i)) {
+      continue;
+    }
+    
     auto k_position = reinterpret_cast<KeyType *>(OffsetAt(i));
     auto v_position = reinterpret_cast<const ValueType *>(OffsetAt(i) + sizeof(KeyType));
     if (!cmp(key, *k_position)) {

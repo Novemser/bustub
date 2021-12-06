@@ -16,6 +16,15 @@
 #include "common/logger.h"
 
 namespace bustub {
+
+HashTableDirectoryPage::HashTableDirectoryPage() {
+  Init();
+}
+
+void HashTableDirectoryPage::Init() {
+  std::fill_n(bucket_page_ids_, DIRECTORY_ARRAY_SIZE, INVALID_PAGE_ID);
+}
+
 page_id_t HashTableDirectoryPage::GetPageId() const { return page_id_; }
 
 void HashTableDirectoryPage::SetPageId(bustub::page_id_t page_id) { page_id_ = page_id; }
@@ -26,7 +35,13 @@ void HashTableDirectoryPage::SetLSN(lsn_t lsn) { lsn_ = lsn; }
 
 uint32_t HashTableDirectoryPage::GetGlobalDepth() { return global_depth_; }
 
-uint32_t HashTableDirectoryPage::GetGlobalDepthMask() { return 0xffffffff >> (sizeof(uint32_t) * 8 - global_depth_); }
+uint32_t HashTableDirectoryPage::GetGlobalDepthMask() {
+  if (global_depth_ == 0) {
+    return 0;
+  }
+  
+  return ((uint32_t)0x1) << (global_depth_ - 1);
+}
 
 void HashTableDirectoryPage::IncrGlobalDepth() { global_depth_++; }
 
@@ -38,7 +53,7 @@ void HashTableDirectoryPage::SetBucketPageId(uint32_t bucket_idx, page_id_t buck
   bucket_page_ids_[bucket_idx] = bucket_page_id;
 }
 
-uint32_t HashTableDirectoryPage::Size() { return DIRECTORY_ARRAY_SIZE; }
+uint32_t HashTableDirectoryPage::Size() { return 1 << global_depth_; }
 
 bool HashTableDirectoryPage::CanShrink() { return false; }
 
