@@ -13,7 +13,9 @@
 #pragma once
 
 #include <queue>
+#include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "buffer/buffer_pool_manager.h"
@@ -161,6 +163,12 @@ class ExtendibleHashTable {
    */
   void Merge(Transaction *transaction, const KeyType &key, const ValueType &value);
 
+  void LinkBucketIdxToPage(uint32_t bucket_idx, page_id_t page_id);
+
+  void UnlinkBucketIdxToPage(uint32_t bucket_idx, page_id_t page_id);
+
+  uint32_t ChooseNextBucketToExtend(uint32_t incoming_bucket_idx, page_id_t page_id);
+
   // member variables
   page_id_t directory_page_id_;
   BufferPoolManager *buffer_pool_manager_;
@@ -169,7 +177,8 @@ class ExtendibleHashTable {
   // Readers includes inserts and removes, writers are splits and merges
   ReaderWriterLatch table_latch_;
   HashFunction<KeyType> hash_fn_;
-  HashTableDirectoryPage* directory_page_;
+  HashTableDirectoryPage *directory_page_;
+  std::unordered_map<page_id_t, std::set<uint32_t> > bucket_page_pointed_by_;
 };
 
 }  // namespace bustub

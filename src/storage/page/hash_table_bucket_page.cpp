@@ -17,7 +17,7 @@
 #include "storage/index/hash_comparator.h"
 #include "storage/table/tmp_tuple.h"
 
-#define OffsetAt(x) (array_ + sizeof(MappingType) * (x))
+#define OffsetAt(x) (array_ + (x))
 
 namespace bustub {
 
@@ -28,11 +28,12 @@ bool HASH_TABLE_BUCKET_TYPE::GetValue(KeyType key, KeyComparator cmp, std::vecto
     if (!IsReadable(i)) {
       continue;
     }
-    
+
     auto k_position = reinterpret_cast<KeyType *>(OffsetAt(i));
-    auto v_position = reinterpret_cast<const ValueType *>(OffsetAt(i) + sizeof(KeyType));
+    auto v_position = reinterpret_cast<ValueType *>(k_position + 1);
     if (!cmp(key, *k_position)) {
       result->push_back(*v_position);
+      // LOG_INFO("*get kv:%d,%d", *((int *)k_position), *((int *)v_position));
       match = true;
     }
   }
@@ -46,17 +47,20 @@ bool HASH_TABLE_BUCKET_TYPE::Insert(KeyType key, ValueType value, KeyComparator 
     return false;
   }
 
-  for (size_t i = 0; i < BUCKET_ARRAY_SIZE; i++) {
+  for (uint32_t i = 0; i < BUCKET_ARRAY_SIZE; i++) {
     auto k_position = reinterpret_cast<KeyType *>(OffsetAt(i));
-    auto v_position = const_cast<ValueType *>(reinterpret_cast<const ValueType *>(OffsetAt(i) + sizeof(KeyType)));
+    auto v_position = reinterpret_cast<ValueType *>(k_position + 1);
     if (IsReadable(i)) {
       // check if the same <kv> pair
       if (!cmp(key, *k_position) && value == *v_position) {
+        // LOG_INFO("Duplicated key valued inserted at pos %d", i);
         return false;
       }
     } else {
       *k_position = key;
       *v_position = value;
+      // LOG_INFO("Inserting to bucket with idx %d:%d,%d", i, *((int *)k_position), *((int *)v_position));
+
       SetOccupied(i);
       SetReadable(i);
       return true;
@@ -91,7 +95,8 @@ KeyType HASH_TABLE_BUCKET_TYPE::KeyAt(uint32_t bucket_idx) const {
 template <typename KeyType, typename ValueType, typename KeyComparator>
 ValueType HASH_TABLE_BUCKET_TYPE::ValueAt(uint32_t bucket_idx) const {
   assert(bucket_idx < BUCKET_ARRAY_SIZE);
-  auto v_position = reinterpret_cast<const ValueType *>(OffsetAt(bucket_idx) + sizeof(KeyType));
+  auto k_position = reinterpret_cast<const KeyType *>(OffsetAt(bucket_idx));
+  auto v_position = reinterpret_cast<const ValueType *>(k_position + 1);
   return *v_position;
 }
 
@@ -102,8 +107,8 @@ void HASH_TABLE_BUCKET_TYPE::RemoveAt(uint32_t bucket_idx) {
   }
 
   // set readable to false
-  const size_t byte_position = bucket_idx / 8;
-  const size_t offset = bucket_idx % 8;
+  const uint32_t byte_position = bucket_idx / 8;
+  const uint32_t offset = bucket_idx % 8;
 
   const unsigned char val = 1 << offset;
   readable_[byte_position] = readable_[byte_position] ^ val;
@@ -111,8 +116,8 @@ void HASH_TABLE_BUCKET_TYPE::RemoveAt(uint32_t bucket_idx) {
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_BUCKET_TYPE::IsOccupied(uint32_t bucket_idx) const {
-  const size_t byte_position = bucket_idx / 8;
-  const size_t offset = bucket_idx % 8;
+  const uint32_t byte_position = bucket_idx / 8;
+  const uint32_t offset = bucket_idx % 8;
 
   const unsigned char val = 1 << offset;
   return occupied_[byte_position] & val;
@@ -120,8 +125,8 @@ bool HASH_TABLE_BUCKET_TYPE::IsOccupied(uint32_t bucket_idx) const {
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 void HASH_TABLE_BUCKET_TYPE::SetOccupied(uint32_t bucket_idx) {
-  const size_t byte_position = bucket_idx / 8;
-  const size_t offset = bucket_idx % 8;
+  const uint32_t byte_position = bucket_idx / 8;
+  const uint32_t offset = bucket_idx % 8;
 
   const unsigned char val = 1 << offset;
   occupied_[byte_position] = occupied_[byte_position] | val;
@@ -129,8 +134,8 @@ void HASH_TABLE_BUCKET_TYPE::SetOccupied(uint32_t bucket_idx) {
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_BUCKET_TYPE::IsReadable(uint32_t bucket_idx) const {
-  const size_t byte_position = bucket_idx / 8;
-  const size_t offset = bucket_idx % 8;
+  const uint32_t byte_position = bucket_idx / 8;
+  const uint32_t offset = bucket_idx % 8;
 
   const unsigned char val = 1 << offset;
   return readable_[byte_position] & val;
@@ -138,8 +143,8 @@ bool HASH_TABLE_BUCKET_TYPE::IsReadable(uint32_t bucket_idx) const {
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 void HASH_TABLE_BUCKET_TYPE::SetReadable(uint32_t bucket_idx) {
-  const size_t byte_position = bucket_idx / 8;
-  const size_t offset = bucket_idx % 8;
+  const uint32_t byte_position = bucket_idx / 8;
+  const uint32_t offset = bucket_idx % 8;
 
   const unsigned char val = 1 << offset;
   readable_[byte_position] = readable_[byte_position] | val;

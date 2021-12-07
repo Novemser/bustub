@@ -17,12 +17,11 @@
 
 namespace bustub {
 
-HashTableDirectoryPage::HashTableDirectoryPage() {
-  Init();
-}
+HashTableDirectoryPage::HashTableDirectoryPage() { Init(); }
 
 void HashTableDirectoryPage::Init() {
   std::fill_n(bucket_page_ids_, DIRECTORY_ARRAY_SIZE, INVALID_PAGE_ID);
+  std::fill_n(local_depths_, DIRECTORY_ARRAY_SIZE, 0);
 }
 
 page_id_t HashTableDirectoryPage::GetPageId() const { return page_id_; }
@@ -39,8 +38,8 @@ uint32_t HashTableDirectoryPage::GetGlobalDepthMask() {
   if (global_depth_ == 0) {
     return 0;
   }
-  
-  return ((uint32_t)0x1) << (global_depth_ - 1);
+
+  return 0xffffffff >> (sizeof(uint32_t) * 8 - global_depth_);
 }
 
 void HashTableDirectoryPage::IncrGlobalDepth() { global_depth_++; }

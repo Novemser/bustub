@@ -33,7 +33,7 @@ namespace bustub {
  */
 class HashTableDirectoryPage {
  public:
-  explicit HashTableDirectoryPage();
+  HashTableDirectoryPage();
 
   void Init();
 
