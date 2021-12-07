@@ -86,6 +86,8 @@ class ExtendibleHashTable {
    */
   void VerifyIntegrity();
 
+  void PrintDirectory();
+
  private:
   /**
    * Hash - simple helper to downcast MurmurHash's 64-bit hash to 32-bit
@@ -169,6 +171,9 @@ class ExtendibleHashTable {
 
   uint32_t ChooseNextBucketToExtend(uint32_t incoming_bucket_idx, page_id_t page_id);
 
+  void ChooseNextBucketToExtend(HASH_TABLE_BUCKET_TYPE *original_bucket_page, uint32_t local_depth,
+                                std::set<uint32_t> *partion_one, std::set<uint32_t> *partion_two);
+
   // member variables
   page_id_t directory_page_id_;
   BufferPoolManager *buffer_pool_manager_;
@@ -177,7 +182,7 @@ class ExtendibleHashTable {
   // Readers includes inserts and removes, writers are splits and merges
   ReaderWriterLatch table_latch_;
   HashFunction<KeyType> hash_fn_;
-  HashTableDirectoryPage *directory_page_;
+  // HashTableDirectoryPage *directory_page_;
   std::unordered_map<page_id_t, std::set<uint32_t> > bucket_page_pointed_by_;
 };
 

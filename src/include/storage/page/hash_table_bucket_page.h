@@ -137,6 +137,13 @@ class HashTableBucketPage {
    */
   void PrintBucket();
 
+  /**
+   * @brief Returns the first key in the bucket page
+   *
+   * @return KeyType
+   */
+  KeyType PeekKey();
+
  private:
   //  For more on BUCKET_ARRAY_SIZE see storage/page/hash_table_page_defs.h
   char occupied_[(BUCKET_ARRAY_SIZE - 1) / 8 + 1];

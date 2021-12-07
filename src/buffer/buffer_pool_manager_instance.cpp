@@ -15,6 +15,7 @@
 #include "buffer/buffer_pool_manager_instance.h"
 
 #include "common/macros.h"
+#include "common/logger.h"
 
 namespace bustub {
 
@@ -53,6 +54,7 @@ bool BufferPoolManagerInstance::GetAvailablePage(frame_id_t *new_frame_id) {
 
   bool available_buf_page = false;
   for (auto it = page_table_.begin(); it != page_table_.end(); it = std::next(it)) {
+    // LOG_INFO("Page %d PinCount: %d", pages_[it->second].GetPageId(), pages_[it->second].GetPinCount());
     if (pages_[it->second].GetPinCount() <= 0) {
       available_buf_page = true;
       break;
@@ -118,6 +120,9 @@ Page *BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) {
   new_page->pin_count_++;
   new_page->is_dirty_ = false;
   *page_id = new_page->page_id_ = new_page_id;
+  // if (new_page->page_id_ == 4) {
+  //   LOG_INFO("Newing Page 4 with pin:%d", new_page->pin_count_);
+  // }
   page_table_.emplace(std::pair<page_id_t, frame_id_t>(new_page_id, new_page_frame_id));
 
   replacer_->Pin(new_page_frame_id);
@@ -136,6 +141,9 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
 
     if (elem_page_id == page_id) {
       pages_[elem_frame_id].pin_count_++;
+      // if (page_id == 4) {
+      //   LOG_INFO("Pining page %d to %d", page_id, pages_[elem_frame_id].pin_count_);
+      // }
       replacer_->Pin(elem_frame_id);
       return &pages_[elem_frame_id];
     }
@@ -159,6 +167,9 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
   found_page->page_id_ = page_id;
   found_page->pin_count_++;
   found_page->is_dirty_ = false;
+  // if (page_id == 4) {
+  //   LOG_INFO("Pining page %d to %d", page_id, found_page->pin_count_);
+  // }
   replacer_->Pin(found_page_frame_id);
 
   return found_page;
@@ -220,7 +231,9 @@ bool BufferPoolManagerInstance::UnpinPgImp(page_id_t page_id, bool is_dirty) {
     return false;
   }
   pages_[frame_id].pin_count_--;
-
+  // if (page_id == 4) {
+  //   LOG_INFO("Unpining page %d to %d", page_id, pages_[frame_id].pin_count_);
+  // }
   if (pages_[frame_id].pin_count_ == 0) {
     replacer_->Unpin(frame_id);
   }

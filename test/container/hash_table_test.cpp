@@ -14,12 +14,112 @@
 #include <vector>
 
 #include "buffer/buffer_pool_manager_instance.h"
+#include "buffer/parallel_buffer_pool_manager.h"
 #include "common/logger.h"
 #include "container/hash/extendible_hash_table.h"
 #include "gtest/gtest.h"
 #include "murmur3/MurmurHash3.h"
 
 namespace bustub {
+
+TEST(HashTableTest, SmallSizeTest) {
+  auto *disk_manager = new DiskManager("test.db");
+  auto num_pages = 5;
+  auto *bpm = new BufferPoolManagerInstance(num_pages, disk_manager);
+  ExtendibleHashTable<int, int, IntComparator> ht("blah", bpm, IntComparator(), HashFunction<int>());
+
+  // insert a few values
+  for (int i = 0; i < 1600; i++) {
+    ht.Insert(nullptr, i, i);
+    std::vector<int> res;
+    ht.GetValue(nullptr, i, &res);
+    EXPECT_EQ(1, res.size()) << "Failed to insert " << i << std::endl;
+    EXPECT_EQ(i, res[0]);
+  }
+
+  ht.VerifyIntegrity();
+
+  for (int i = 0; i < 1600; i++) {
+    EXPECT_EQ(true, ht.Remove(nullptr, i, i));
+  }
+
+  ht.VerifyIntegrity();
+  ht.PrintDirectory();
+
+  for (int i = 0; i < 1600; i++) {
+    if (i == 941) {
+      ht.PrintDirectory();
+    }
+    ht.Insert(nullptr, i, i);
+    std::vector<int> res;
+    ht.GetValue(nullptr, i, &res);
+    EXPECT_EQ(1, res.size()) << "Failed to insert " << i << std::endl;
+    EXPECT_EQ(i, res[0]);
+  }
+  ht.VerifyIntegrity();
+
+  disk_manager->ShutDown();
+  remove("test.db");
+  delete disk_manager;
+  delete bpm;
+}
+
+// NOLINTNEXTLINE
+TEST(HashTableTest, RemoveTest) {
+  auto *disk_manager = new DiskManager("test.db");
+  auto *bpm = new BufferPoolManagerInstance(50, disk_manager);
+  // auto *bpm = new BufferPoolManagerInstance(50, disk_manager);
+  ExtendibleHashTable<int, int, IntComparator> ht("blah", bpm, IntComparator(), HashFunction<int>());
+
+  // insert a few values
+  for (int i = 0; i < 6000; i++) {
+    ht.Insert(nullptr, i, i);
+    std::vector<int> res;
+    ht.GetValue(nullptr, i, &res);
+    EXPECT_EQ(1, res.size()) << "Failed to insert " << i << std::endl;
+    EXPECT_EQ(i, res[0]);
+  }
+
+  ht.VerifyIntegrity();
+
+  // check if the inserted values are all there
+  for (int i = 0; i < 6000; i++) {
+    std::vector<int> res;
+    ht.GetValue(nullptr, i, &res);
+    EXPECT_EQ(1, res.size()) << "Failed to keep " << i << std::endl;
+    EXPECT_EQ(i, res[0]);
+  }
+
+  ht.VerifyIntegrity();
+  // ht.PrintDirectory();
+
+  for (int i = 0; i < 1000; i++) {
+    auto res = ht.Remove(nullptr, i, i);
+    EXPECT_EQ(true, res) << "Failed to remove " << i << std::endl;
+  }
+  ht.VerifyIntegrity();
+
+  for (int i = 6000; i < 2000; i++) {
+    ht.Insert(nullptr, i, i);
+    std::vector<int> res;
+    ht.GetValue(nullptr, i, &res);
+    EXPECT_EQ(1, res.size()) << "Failed to insert " << i << std::endl;
+    EXPECT_EQ(i, res[0]);
+  }
+  ht.VerifyIntegrity();
+
+  for (int i = 6000; i < 1000; i++) {
+    auto res = ht.Remove(nullptr, i, i);
+    EXPECT_EQ(true, res) << "Failed to remove " << i << std::endl;
+  }
+  ht.VerifyIntegrity();
+  // ht.PrintDirectory();
+
+  disk_manager->ShutDown();
+  remove("test.db");
+  delete disk_manager;
+  delete bpm;
+}
 
 // NOLINTNEXTLINE
 TEST(HashTableTest, HardSampleTest) {

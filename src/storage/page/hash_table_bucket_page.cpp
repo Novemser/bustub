@@ -200,6 +200,18 @@ void HASH_TABLE_BUCKET_TYPE::PrintBucket() {
   LOG_INFO("Bucket Capacity: %lu, Size: %u, Taken: %u, Free: %u", BUCKET_ARRAY_SIZE, size, taken, free);
 }
 
+template <typename KeyType, typename ValueType, typename KeyComparator>
+KeyType HASH_TABLE_BUCKET_TYPE::PeekKey() {
+  for (size_t bucket_idx = 0; bucket_idx < BUCKET_ARRAY_SIZE; bucket_idx++) {
+    if (!IsOccupied(bucket_idx) || !IsReadable(bucket_idx)) {
+      continue;
+    }
+
+    return KeyAt(bucket_idx);
+  }
+  assert(false);
+}
+
 // DO NOT REMOVE ANYTHING BELOW THIS LINE
 template class HashTableBucketPage<int, int, IntComparator>;
 
