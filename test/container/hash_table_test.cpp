@@ -22,10 +22,64 @@
 
 namespace bustub {
 
+TEST(HashTableTest, ConcurrencyTest) {
+  auto *disk_manager = new DiskManager("test.db");
+  uint16_t num_pages = 5;
+  uint16_t num_threads = 5;
+  auto *bpm = new ParallelBufferPoolManager(num_pages, num_pages, disk_manager);
+  ExtendibleHashTable<int, int, IntComparator> ht("blah", bpm, IntComparator(), HashFunction<int>());
+  std::thread threads[num_threads];
+  
+  for (size_t i = 0; i < num_threads; i++) {
+    threads[i] = std::thread([&](size_t offset) {
+      for (int i = offset; i < 1600 * num_threads; i += num_threads) {
+        int val = i;
+        // LOG_INFO("Inserting %d %d by thread %d", i, val, i);
+        ht.Insert(nullptr, i, val);
+        std::vector<int> res;
+        ht.GetValue(nullptr, i, &res);
+        EXPECT_EQ(1, res.size()) << "Failed to insert " << i << " for thread " << offset << std::endl;
+        EXPECT_EQ(val, res[0]);
+      }
+
+      ht.VerifyIntegrity();
+
+      for (int i = offset; i < 1600 * num_threads; i += num_threads) {
+        EXPECT_EQ(true, ht.Remove(nullptr, i, i));
+      }
+
+      ht.VerifyIntegrity();
+      for (int i = offset; i < 1600 * num_threads; i += num_threads) {
+        int val = i;
+        // LOG_INFO("Inserting %d %d by thread %d", i, val, i);
+        ht.Insert(nullptr, i, val);
+        std::vector<int> res;
+        ht.GetValue(nullptr, i, &res);
+        EXPECT_EQ(1, res.size()) << "Failed to insert " << i << " for thread " << offset << std::endl;
+        EXPECT_EQ(val, res[0]);
+      }
+
+      ht.VerifyIntegrity();
+    }, i);
+  }
+
+  for (size_t i = 0; i < num_threads; i++) {
+    threads[i].join();
+  }
+  ht.VerifyIntegrity();
+
+  disk_manager->ShutDown();
+  remove("test.db");
+  delete disk_manager;
+  delete bpm;
+}
+
 TEST(HashTableTest, SmallSizeTest) {
   auto *disk_manager = new DiskManager("test.db");
   auto num_pages = 5;
   auto *bpm = new BufferPoolManagerInstance(num_pages, disk_manager);
+  // auto *bpm = new ParallelBufferPoolManager(num_pages, num_pages, disk_manager);
+
   ExtendibleHashTable<int, int, IntComparator> ht("blah", bpm, IntComparator(), HashFunction<int>());
 
   // insert a few values
@@ -44,12 +98,9 @@ TEST(HashTableTest, SmallSizeTest) {
   }
 
   ht.VerifyIntegrity();
-  ht.PrintDirectory();
+  // ht.PrintDirectory();
 
   for (int i = 0; i < 1600; i++) {
-    if (i == 941) {
-      ht.PrintDirectory();
-    }
     ht.Insert(nullptr, i, i);
     std::vector<int> res;
     ht.GetValue(nullptr, i, &res);

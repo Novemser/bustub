@@ -25,9 +25,9 @@ LRUReplacer::LRUReplacer(size_t num_pages) {
 LRUReplacer::~LRUReplacer() = default;
 
 bool LRUReplacer::Victim(frame_id_t *frame_id) {
+  std::lock_guard<std::mutex> lock(lock_);
   auto lst = &this->data_;
   if (id_position_map_.empty()) {
-    frame_id = nullptr;
     return false;
   }
 
@@ -54,7 +54,9 @@ void LRUReplacer::Unpin(frame_id_t frame_id) {
   if (id_position_map_.count(frame_id) == 0) {
     // not found, add to the first position
     while (lst->size() >= max_pages_) {
+      auto last_elem = lst->back();
       lst->pop_back();
+      id_position_map_.erase(last_elem);
     }
 
     lst->emplace_front(frame_id);
@@ -62,6 +64,9 @@ void LRUReplacer::Unpin(frame_id_t frame_id) {
   }
 }
 
-size_t LRUReplacer::Size() { return this->data_.size(); }
+size_t LRUReplacer::Size() {
+  std::lock_guard<std::mutex> lock(lock_);
+  return this->data_.size();
+}
 
 }  // namespace bustub
