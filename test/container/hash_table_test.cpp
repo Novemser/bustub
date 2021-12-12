@@ -29,38 +29,40 @@ TEST(HashTableTest, ConcurrencyTest) {
   auto *bpm = new ParallelBufferPoolManager(num_pages, num_pages, disk_manager);
   ExtendibleHashTable<int, int, IntComparator> ht("blah", bpm, IntComparator(), HashFunction<int>());
   std::thread threads[num_threads];
-  
+
   for (size_t i = 0; i < num_threads; i++) {
-    threads[i] = std::thread([&](size_t offset) {
-      for (int i = offset; i < 1600 * num_threads; i += num_threads) {
-        int val = i;
-        // LOG_INFO("Inserting %d %d by thread %d", i, val, i);
-        ht.Insert(nullptr, i, val);
-        std::vector<int> res;
-        ht.GetValue(nullptr, i, &res);
-        EXPECT_EQ(1, res.size()) << "Failed to insert " << i << " for thread " << offset << std::endl;
-        EXPECT_EQ(val, res[0]);
-      }
+    threads[i] = std::thread(
+        [&](size_t offset) {
+          for (int i = offset; i < 1600 * num_threads; i += num_threads) {
+            int val = i;
+            // LOG_INFO("Inserting %d %d by thread %d", i, val, i);
+            ht.Insert(nullptr, i, val);
+            std::vector<int> res;
+            ht.GetValue(nullptr, i, &res);
+            EXPECT_EQ(1, res.size()) << "Failed to insert " << i << " for thread " << offset << std::endl;
+            EXPECT_EQ(val, res[0]);
+          }
 
-      ht.VerifyIntegrity();
+          ht.VerifyIntegrity();
 
-      for (int i = offset; i < 1600 * num_threads; i += num_threads) {
-        EXPECT_EQ(true, ht.Remove(nullptr, i, i));
-      }
+          for (int i = offset; i < 1600 * num_threads; i += num_threads) {
+            EXPECT_EQ(true, ht.Remove(nullptr, i, i));
+          }
 
-      ht.VerifyIntegrity();
-      for (int i = offset; i < 1600 * num_threads; i += num_threads) {
-        int val = i;
-        // LOG_INFO("Inserting %d %d by thread %d", i, val, i);
-        ht.Insert(nullptr, i, val);
-        std::vector<int> res;
-        ht.GetValue(nullptr, i, &res);
-        EXPECT_EQ(1, res.size()) << "Failed to insert " << i << " for thread " << offset << std::endl;
-        EXPECT_EQ(val, res[0]);
-      }
+          ht.VerifyIntegrity();
+          for (int i = offset; i < 1600 * num_threads; i += num_threads) {
+            int val = i;
+            // LOG_INFO("Inserting %d %d by thread %d", i, val, i);
+            ht.Insert(nullptr, i, val);
+            std::vector<int> res;
+            ht.GetValue(nullptr, i, &res);
+            EXPECT_EQ(1, res.size()) << "Failed to insert " << i << " for thread " << offset << std::endl;
+            EXPECT_EQ(val, res[0]);
+          }
 
-      ht.VerifyIntegrity();
-    }, i);
+          ht.VerifyIntegrity();
+        },
+        i);
   }
 
   for (size_t i = 0; i < num_threads; i++) {
