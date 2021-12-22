@@ -18,6 +18,31 @@
 #include "gtest/gtest.h"
 
 namespace bustub {
+TEST(ParallelBufferPoolManagerTest, RRTest) {
+  const std::string db_name = "test.db";
+  const size_t buffer_pool_size = 10;
+  const size_t num_instances = 5;
+
+  auto *disk_manager = new DiskManager(db_name);
+  auto *bpm = new ParallelBufferPoolManager(num_instances, buffer_pool_size, disk_manager);
+
+  page_id_t page_id_temp;
+  // auto *page0 = bpm->NewPage(&page_id_temp);
+
+  // Scenario: We should be able to create new pages until we fill up the buffer pool.
+  for (size_t i = 0; i < buffer_pool_size * num_instances * 2; ++i) {
+    EXPECT_NE(nullptr, bpm->NewPage(&page_id_temp));
+    EXPECT_EQ(i, page_id_temp);
+    EXPECT_EQ(true, bpm->UnpinPage(i, true));
+  }
+
+  // Shutdown the disk manager and remove the temporary file we created.
+  disk_manager->ShutDown();
+  remove("test.db");
+
+  delete bpm;
+  delete disk_manager;
+}
 
 // NOLINTNEXTLINE
 // Check whether pages containing terminal characters can be recovered

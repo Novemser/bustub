@@ -27,16 +27,15 @@ void SeqScanExecutor::Init() {
 
 bool SeqScanExecutor::Next(Tuple *tuple, RID *rid) {
   while (iter_ != end_iter_) {
-    Tuple tp = *iter_;
+    Tuple tp = *iter_++;
     if (plan_->GetPredicate() != nullptr) {
-      if (plan_->GetPredicate()->Evaluate(&tp, &table_info_->schema_).GetAs<bool>()) {
-        iter_++;
-        *tuple = tp;
-        *rid = tp.GetRid();
-        return true;
+      if (!plan_->GetPredicate()->Evaluate(&tp, &table_info_->schema_).GetAs<bool>()) {
+        continue;
       }
     }
-    iter_++;
+    *tuple = std::move(tp);
+    *rid = tp.GetRid();
+    return true;
   }
 
   return false;
