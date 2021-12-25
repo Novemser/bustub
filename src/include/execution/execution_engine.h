@@ -66,6 +66,7 @@ class ExecutionEngine {
       }
     } catch (Exception &e) {
       // TODO(student): handle exceptions
+      assert(false);
     }
 
     return true;

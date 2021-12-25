@@ -17,11 +17,43 @@ namespace bustub {
 
 UpdateExecutor::UpdateExecutor(ExecutorContext *exec_ctx, const UpdatePlanNode *plan,
                                std::unique_ptr<AbstractExecutor> &&child_executor)
-    : AbstractExecutor(exec_ctx) {}
+    : AbstractExecutor(exec_ctx), plan_(plan), child_executor_(std::move(child_executor)) {}
+void UpdateExecutor::UpdateIndex(const Tuple &tp_old, const Tuple &tp_new, const RID &rid) {
+  auto indexes = exec_ctx_->GetCatalog()->GetTableIndexes(exec_ctx_->GetCatalog()->GetTable(plan_->TableOid())->name_);
 
-void UpdateExecutor::Init() {}
+  for (auto idx : indexes) {
+    idx->index_->DeleteEntry(tp_old, rid, exec_ctx_->GetTransaction());
+    idx->index_->InsertEntry(tp_new, rid, exec_ctx_->GetTransaction());
+  }
+}
 
-bool UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) { return false; }
+void UpdateExecutor::Init() {
+  table_info_ = exec_ctx_->GetCatalog()->GetTable(plan_->TableOid());
+  finished_ = false;
+}
+
+bool UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
+  if (finished_) {
+    return false;
+  }
+
+  assert(child_executor_ != nullptr);
+  Tuple tmp_tuple;
+  RID tmp_rid;
+  child_executor_->Init();
+
+  while (child_executor_->Next(&tmp_tuple, &tmp_rid)) {
+    Tuple update_tp(GenerateUpdatedTuple(tmp_tuple));
+    bool res = table_info_->table_->UpdateTuple(update_tp, tmp_rid, exec_ctx_->GetTransaction());
+    if (!res) {
+      throw "Failed to update a tuple";
+    }
+    UpdateIndex(tmp_tuple, update_tp, tmp_rid);
+  }
+  finished_ = true;
+
+  return false;
+}
 
 Tuple UpdateExecutor::GenerateUpdatedTuple(const Tuple &src_tuple) {
   const auto &update_attrs = plan_->GetUpdateAttr();

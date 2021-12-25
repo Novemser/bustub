@@ -61,7 +61,7 @@ class InsertExecutor : public AbstractExecutor {
   const InsertPlanNode *plan_;
   std::unique_ptr<AbstractExecutor> child_executor_;
   bool finished_;
-  void InsertTupleToIndex(const Tuple& tp, const RID rid);
+  void InsertTupleToIndex(const Tuple &tp, const RID &rid);
 };
 
 }  // namespace bustub

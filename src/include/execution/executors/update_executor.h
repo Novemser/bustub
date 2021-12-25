@@ -65,6 +65,7 @@ class UpdateExecutor : public AbstractExecutor {
    * @param src_tuple The tuple to be updated
    */
   Tuple GenerateUpdatedTuple(const Tuple &src_tuple);
+  void UpdateIndex(const Tuple &tp_old, const Tuple &tp_new, const RID &rid);
 
   /** The update plan node to be executed */
   const UpdatePlanNode *plan_;
@@ -72,5 +73,7 @@ class UpdateExecutor : public AbstractExecutor {
   const TableInfo *table_info_;
   /** The child executor to obtain value from */
   std::unique_ptr<AbstractExecutor> child_executor_;
+
+  bool finished_;
 };
 }  // namespace bustub

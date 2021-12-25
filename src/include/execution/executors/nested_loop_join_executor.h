@@ -13,7 +13,9 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
@@ -53,8 +55,19 @@ class NestedLoopJoinExecutor : public AbstractExecutor {
   const Schema *GetOutputSchema() override { return plan_->OutputSchema(); };
 
  private:
+  bool FindWithMatchingValue(const Schema *schema, const std::string &required_col_name,
+                             std::vector<bustub::Value> *output, const Tuple *source);
+  bool ProductNext(Tuple *tuple_left, RID *rid_left, Tuple *tuple_right, RID *rid_right);
   /** The NestedLoopJoin plan node to be executed. */
   const NestedLoopJoinPlanNode *plan_;
+  std::unique_ptr<AbstractExecutor> left_executor_;
+  std::unique_ptr<AbstractExecutor> right_executor_;
+  bool finished_;
+
+  bool inner_loop_finished_;
+  bool outer_loop_finished_;
+  Tuple outer_tuple_cursor_;
+  RID outer_tuple_rid_;
 };
 
 }  // namespace bustub

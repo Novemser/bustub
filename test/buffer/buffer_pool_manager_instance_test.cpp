@@ -26,7 +26,6 @@ TEST(BufferPoolManagerInstanceTest, TestPageIds) {
   auto *disk_manager = new DiskManager(db_name);
   auto *bpm = new BufferPoolManagerInstance(buffer_pool_size, disk_manager);
 
-
   for (size_t i = 0; i < 1000; i++) {
     page_id_t page_id_temp;
     auto *page0 = bpm->NewPage(&page_id_temp);
