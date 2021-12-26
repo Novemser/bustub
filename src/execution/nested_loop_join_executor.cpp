@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "execution/executors/nested_loop_join_executor.h"
+#include "common/util/join_util.h"
 
 namespace bustub {
 
@@ -21,21 +22,6 @@ NestedLoopJoinExecutor::NestedLoopJoinExecutor(ExecutorContext *exec_ctx, const 
       plan_(plan),
       left_executor_(std::move(left_executor)),
       right_executor_(std::move(right_executor)) {}
-
-bool NestedLoopJoinExecutor::FindWithMatchingValue(const Schema *schema, const std::string &required_col_name,
-                                                   std::vector<bustub::Value> *output, const Tuple *source) {
-  for (uint32_t idx_schema_col = 0; idx_schema_col < schema->GetColumnCount(); idx_schema_col++) {
-    if (schema->GetColumn(idx_schema_col).GetName() != required_col_name) {
-      continue;
-    }
-    // column name match, put into result
-    assert(source != nullptr);
-    output->emplace_back(source->GetValue(schema, idx_schema_col));
-    return true;
-  }
-
-  return false;
-}
 
 bool NestedLoopJoinExecutor::ProductNext(Tuple *tuple_left, RID *rid_left, Tuple *tuple_right, RID *rid_right) {
   assert(tuple_left != nullptr && tuple_right != nullptr && rid_left != nullptr && rid_right != nullptr);
@@ -102,17 +88,8 @@ bool NestedLoopJoinExecutor::Next(Tuple *tuple, RID *rid) {
     }
     // concat each output column in the final result set.
     std::vector<bustub::Value> vals_out_tuple;
-    for (uint32_t idx_out_col = 0; idx_out_col < out_schema->GetColumnCount(); idx_out_col++) {
-      auto const& col_out = out_schema->GetColumn(idx_out_col);
-      auto const& col_out_name = col_out.GetName();
-      // find matching column in left side
-      if (FindWithMatchingValue(left_schema, col_out_name, &vals_out_tuple, &tuple_left) ||
-          FindWithMatchingValue(right_schema, col_out_name, &vals_out_tuple, &tuple_right)) {
-        continue;
-      }
-      throw Exception(ExceptionType::INVALID, "Unexpected schema mismatching");
-    }
-
+    JoinUtil::ConcatTuplesByOutputSchema(out_schema, left_schema, right_schema, &tuple_left, &tuple_right,
+                                         &vals_out_tuple);
     *tuple = Tuple(vals_out_tuple, out_schema);
     // TODO(novemser): what to do with rid?
     return true;

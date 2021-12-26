@@ -55,8 +55,6 @@ class NestedLoopJoinExecutor : public AbstractExecutor {
   const Schema *GetOutputSchema() override { return plan_->OutputSchema(); };
 
  private:
-  bool FindWithMatchingValue(const Schema *schema, const std::string &required_col_name,
-                             std::vector<bustub::Value> *output, const Tuple *source);
   bool ProductNext(Tuple *tuple_left, RID *rid_left, Tuple *tuple_right, RID *rid_right);
   /** The NestedLoopJoin plan node to be executed. */
   const NestedLoopJoinPlanNode *plan_;
