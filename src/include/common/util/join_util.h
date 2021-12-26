@@ -36,14 +36,13 @@ class JoinUtil {
       auto col_val_expr =
           reinterpret_cast<ColumnValueExpression *>(const_cast<AbstractExpression *>(col_out.GetExpr()));
       auto tuple_idx = col_val_expr->GetTupleIdx();
+      auto col_idx = col_val_expr->GetColIdx();
       assert(tuple_idx <= 1 && tuple_idx >= 0);
       if (tuple_idx == 0) {
         // left table
-        auto col_idx = col_val_expr->GetColIdx();
         vals_out_tuple->emplace_back(tuple_left->GetValue(left_schema, col_idx));
       } else {
         // right table
-        auto col_idx = col_val_expr->GetColIdx();
         vals_out_tuple->emplace_back(tuple_right->GetValue(right_schema, col_idx));
       }
     }
