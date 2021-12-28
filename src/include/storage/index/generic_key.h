@@ -33,7 +33,7 @@ class GenericKey {
     // intialize to 0
     // std::cout << "KeySize:" << KeySize << "|Tuple.GetLength()" << tuple.GetLength() << std::endl;
     memset(data_, 0, KeySize);
-    memcpy(data_, tuple.GetData(), KeySize);
+    memcpy(data_, tuple.GetData(), tuple.GetLength());
   }
 
   // NOTE: for test purpose only

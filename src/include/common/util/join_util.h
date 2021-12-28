@@ -37,7 +37,7 @@ class JoinUtil {
           reinterpret_cast<ColumnValueExpression *>(const_cast<AbstractExpression *>(col_out.GetExpr()));
       auto tuple_idx = col_val_expr->GetTupleIdx();
       auto col_idx = col_val_expr->GetColIdx();
-      assert(tuple_idx <= 1 && tuple_idx >= 0);
+      assert(tuple_idx <= 1);
       if (tuple_idx == 0) {
         // left table
         vals_out_tuple->emplace_back(tuple_left->GetValue(left_schema, col_idx));

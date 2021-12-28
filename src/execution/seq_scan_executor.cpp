@@ -34,7 +34,13 @@ bool SeqScanExecutor::Next(Tuple *tuple, RID *rid) {
       }
     }
     *rid = tp.GetRid();
-    *tuple = tp;
+    std::vector<bustub::Value> vals;
+    auto out_schema = plan_->OutputSchema();
+    for (uint32_t idx_col_output = 0; idx_col_output < out_schema->GetColumnCount(); idx_col_output++) {
+      vals.emplace_back(tp.GetValue(out_schema, idx_col_output));
+    }
+    assert(out_schema->GetColumnCount() == vals.size());
+    *tuple = Tuple(vals, out_schema);
     return true;
   }
 
